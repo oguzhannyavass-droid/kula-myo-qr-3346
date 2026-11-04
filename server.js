@@ -20,6 +20,20 @@ function generateTimeToken(eventId, timeWindow) {
     return crypto.createHash('sha256').update(data).digest('hex');
 }
 
+// İki koordinat (enlem, boylam) arasındaki mesafeyi metre cinsinden hesaplayan fonksiyon
+function getDistanceInMetres(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Dünya yarıçapı (metre)
+    const p1 = lat1 * Math.PI/180;
+    const p2 = lat2 * Math.PI/180;
+    const deltaP = (lat2-lat1) * Math.PI/180;
+    const deltaLon = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(deltaP/2) * Math.sin(deltaP/2) +
+              Math.cos(p1) * Math.cos(p2) *
+              Math.sin(deltaLon/2) * Math.sin(deltaLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
 // 1. QR Token Üretme
 app.get('/api/get-qr-token', (req, res) => {
     const eventId = req.query.eventId || "etkinlik_1";
@@ -50,12 +64,12 @@ app.post('/api/register', async (req, res) => {
     res.json({ success: true, message: "Kayıt başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz." });
 });
 
-// 3. Öğrenci Giriş ve Yoklama Katılımı
+// 3. Öğrenci Giriş ve Yoklama Katılımı (Konum Kontrollü)
 app.post('/api/login-and-attend', async (req, res) => {
-    const { ogrenci_no, sifre, eventId, submittedToken } = req.body;
+    const { ogrenci_no, sifre, eventId, submittedToken, ogr_enlem, ogr_boylam } = req.body;
     
-    if (!ogrenci_no || !sifre || !eventId || !submittedToken) {
-        return res.status(400).json({ success: false, message: "Lütfen tüm alanları doldurun." });
+    if (!ogrenci_no || !sifre || !eventId || !submittedToken || !ogr_enlem || !ogr_boylam) {
+        return res.status(400).json({ success: false, message: "Lütfen tüm alanları doldurun ve KONUM izni verin!" });
     }
 
     const currentWindow = Math.floor(Date.now() / WINDOW_STEP);
@@ -65,6 +79,18 @@ app.post('/api/login-and-attend', async (req, res) => {
 
     if (submittedToken !== validTokenNow && submittedToken !== validTokenPrev1 && submittedToken !== validTokenPrev2) {
         return res.status(400).json({ success: false, message: "Süresi dolmuş veya geçersiz QR kod!" });
+    }
+
+    // Etkinliğin Konumunu Çek
+    const { data: etkinlikData } = await supabase.from('etkinlikler').select('enlem, boylam').eq('etkinlik_id', eventId).single();
+    if (!etkinlikData || !etkinlikData.enlem || !etkinlikData.boylam) {
+         return res.status(400).json({ success: false, message: "Etkinlik konumu bulunamadı." });
+    }
+
+    // Mesafe Hesapla (100 Metre Sınırı)
+    const distance = getDistanceInMetres(etkinlikData.enlem, etkinlikData.boylam, ogr_enlem, ogr_boylam);
+    if (distance > 100) {
+         return res.status(400).json({ success: false, message: `Etkinlik alanından çok uzaksınız! (Mesafe: ${Math.round(distance)} metre)` });
     }
 
     const { data: ogrenci, error: ogrenciError } = await supabase
@@ -94,14 +120,14 @@ app.post('/api/login-and-attend', async (req, res) => {
     res.json({ success: true, message: `Harika ${ogrenci.ogrenci_ad_soyad}, yoklamanız alındı!` });
 });
 
-// 4. Etkinlik Oluşturma (Yönetici)
+// 4. Etkinlik Oluşturma (Yönetici - Konum Kayıtlı)
 app.post('/api/create-event', async (req, res) => {
-    const { etkinlik_adi, yer, kontenjan, tarih } = req.body;
+    const { etkinlik_adi, yer, kontenjan, tarih, enlem, boylam } = req.body;
     const etkinlik_id = etkinlik_adi.replace(/\s+/g, '-').toLowerCase();
 
     const { error } = await supabase
         .from('etkinlikler')
-        .insert([{ etkinlik_id, etkinlik_adi, yer, kontenjan, tarih }]);
+        .insert([{ etkinlik_id, etkinlik_adi, yer, kontenjan, tarih, enlem, boylam }]);
 
     if (error) {
         return res.status(400).json({ success: false, message: "Etkinlik oluşturulamadı: " + error.message });
