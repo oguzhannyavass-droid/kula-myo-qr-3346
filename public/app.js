@@ -56,14 +56,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            const no = document.getElementById('regNo').value.trim();
+            const name = document.getElementById('regName').value.trim();
+            const bolum = document.getElementById('regBolum').value.trim();
+            const sifre = document.getElementById('regPw').value.trim();
+
+            // --- REGEX KURALLARI (Türkçe Karakter Destekli) ---
+            const sayiRegex = /^\d+$/; // Sadece rakam
+            const harfBoslukRegex = /^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]+$/; // Sadece harf ve boşluk
+            const sifreRegex = /^(?=.*[a-zA-ZğüşıöçĞÜŞİÖÇ])(?=.*\d).{6,}$/; // En az 6 hane, harf ve sayı
+
+            if (!sayiRegex.test(no)) {
+                return alert("Hata: Öğrenci numarası sadece sayılardan oluşmalıdır.");
+            }
+            if (!harfBoslukRegex.test(name)) {
+                return alert("Hata: Ad Soyad sadece harf ve boşluklardan oluşmalıdır.");
+            }
+            if (!harfBoslukRegex.test(bolum)) {
+                return alert("Hata: Bölüm sadece harf ve boşluklardan oluşmalıdır.");
+            }
+            if (!sifreRegex.test(sifre)) {
+                return alert("Hata: Şifre en az 6 haneli olmalı, ayrıca hem harf hem de sayı içermelidir.");
+            }
+
             const res = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ogrenci_no: document.getElementById('regNo').value,
-                    ogrenci_ad_soyad: document.getElementById('regName').value,
-                    bolum: document.getElementById('regBolum').value,
-                    sifre: document.getElementById('regPw').value
+                    ogrenci_no: no,
+                    ogrenci_ad_soyad: name,
+                    bolum: bolum,
+                    sifre: sifre
                 })
             });
             const result = await res.json();
@@ -549,7 +573,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const no = document.getElementById('aNo').value;
                 const pw = document.getElementById('aPw').value;
 
-                if (no === 'yonetici' && pw === '123456') { 
+                if (no === 'admin' && pw === '123456') { 
                     authDialog.close(); 
                     navAdmin.hidden = false; 
                     adminSection.hidden = false; 
