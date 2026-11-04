@@ -576,7 +576,118 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     }
+    // --- ÖĞRENCİ GİRİŞİ VE GERİ BİLDİRİM PANELİ ---
+        const stdLoginBtn = document.getElementById('stdLoginBtn');
+        const stdAuth = document.getElementById('stdAuth');
+        const stdForm = document.getElementById('stdForm');
+        const sX = document.getElementById('sX');
+        
+        if (stdLoginBtn) stdLoginBtn.addEventListener('click', () => stdAuth.showModal());
+        if (sX) sX.addEventListener('click', () => stdAuth.close());
 
+        if (stdForm) {
+            stdForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const no = document.getElementById('sNo').value;
+                const pw = document.getElementById('sPw').value;
+                
+                const res = await fetch('/api/student-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ogrenci_no: no, sifre: pw })
+                });
+                const r = await res.json();
+                
+                if (r.success) {
+                    stdAuth.close();
+                    showStudentProfileScreen(no); // Başarılıysa paneli aç
+                } else {
+                    alert(r.message);
+                }
+            });
+        }
+
+        // Öğrenci Profil ve Geri Bildirim Ekranı Oluşturucu
+        window.showStudentProfileScreen = async function(ogrenciNo) {
+            const profRes = await fetch(`/api/student-profile?ogrenci_no=${ogrenciNo}`);
+            const profResult = await profRes.json();
+            
+            if (profResult.success) {
+                let historyRows = profResult.history.map(h => `
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                        <td style="padding:0.6rem; color:#fff;">${h.etkinlik_id}</td>
+                        <td style="padding:0.6rem; color:#fff;">${new Date(h.katilim_tarihi).toLocaleDateString('tr-TR')}</td>
+                        <td style="padding:0.6rem; display:flex; gap:0.5rem;">
+                            <input type="text" id="yorum-${h.etkinlik_id}" value="${h.yorum || ''}" placeholder="Görüşleriniz..." style="padding:0.4rem; border-radius:0.3rem; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.2); color:#fff; width:100%;">
+                            <button onclick="submitFeedback('${ogrenciNo}', '${h.etkinlik_id}')" style="background:#a6e6db; color:#0d2b52; border:none; padding:0.4rem 0.8rem; border-radius:0.3rem; cursor:pointer; font-weight:bold;">İlet</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                document.body.innerHTML = `
+                    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0d2b52; color: #fff; padding: 1rem; font-family: 'Inter', sans-serif;">
+                        <div style="background: #113663; padding: 2.5rem; border-radius: 1rem; max-width: 650px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                                <h3 style="color: #a6e6db; margin:0; font-size:1.5rem;">Hoş Geldin, ${profResult.student.ogrenci_ad_soyad}</h3>
+                                <button onclick="location.reload()" style="background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.3); padding:0.5rem 1rem; border-radius:0.5rem; cursor:pointer; font-weight:bold;">Çıkış Yap</button>
+                            </div>
+                            
+                            <form id="updateProfileForm" style="display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 2rem; background:rgba(0,0,0,0.15); padding:1.5rem; border-radius:0.75rem;">
+                                <h4 style="margin:0 0 0.5rem 0; color:#fff;">Bilgilerimi Güncelle</h4>
+                                <input type="text" id="updName" value="${profResult.student.ogrenci_ad_soyad}" required style="padding:0.7rem; background:rgba(0,0,0,0.2); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem;">
+                                <input type="text" id="updBolum" value="${profResult.student.bolum}" required style="padding:0.7rem; background:rgba(0,0,0,0.2); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem;">
+                                <input type="password" id="updPw" value="${profResult.student.sifre}" required style="padding:0.7rem; background:rgba(0,0,0,0.2); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem;">
+                                <button type="submit" style="padding:0.8rem; background:#a6e6db; color:#0d2b52; border:none; border-radius:0.4rem; font-weight:bold; cursor:pointer; margin-top:0.5rem;">Kaydet</button>
+                            </form>
+
+                            <h4 style="color: #a6e6db; margin-bottom:1rem;">Katıldığım Etkinlikler & Geri Bildirimler</h4>
+                            <div style="max-height: 250px; overflow-y: auto; background:rgba(0,0,0,0.15); border-radius:0.75rem; padding:0.5rem;">
+                                <table style="width:100%; border-collapse:collapse; font-size:0.95rem; text-align:left;">
+                                    <thead>
+                                        <tr style="border-bottom:1px solid rgba(255,255,255,0.2); color:#a6e6db;">
+                                            <th style="padding:0.6rem;">Etkinlik</th>
+                                            <th style="padding:0.6rem;">Tarih</th>
+                                            <th style="padding:0.6rem;">Yorumunuz</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${historyRows || '<tr><td colspan="3" style="padding:1.5rem; text-align:center; color:rgba(255,255,255,0.6);">Henüz katılım yok.</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('updateProfileForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const uRes = await fetch('/api/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ogrenci_no: ogrenciNo,
+                            ogrenci_ad_soyad: document.getElementById('updName').value,
+                            bolum: document.getElementById('updBolum').value,
+                            sifre: document.getElementById('updPw').value
+                        })
+                    });
+                    const uResJson = await uRes.json();
+                    alert(uResJson.message);
+                });
+            }
+        };
+
+        // Yorum Gönderme Fonksiyonu (Global)
+        window.submitFeedback = async function(ogrenciNo, etkinlikId) {
+            const yorumText = document.getElementById(`yorum-${etkinlikId}`).value;
+            const res = await fetch('/api/submit-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ogrenci_no: ogrenciNo, etkinlik_id: etkinlikId, yorum: yorumText })
+            });
+            const r = await res.json();
+            alert(r.message);
+        };
     // --- 3B SAHNE (ARKAPLAN ANİMASYONU) ---
     const canvasGL = document.querySelector('#gl');
     if (canvasGL && typeof THREE !== 'undefined') {
