@@ -549,7 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const no = document.getElementById('aNo').value;
                 const pw = document.getElementById('aPw').value;
 
-                if (no === 'admin' && pw === '123456') { 
+                if (no === 'yonetici' && pw === '123456') { 
                     authDialog.close(); 
                     navAdmin.hidden = false; 
                     adminSection.hidden = false; 
