@@ -233,5 +233,33 @@ app.post('/api/update-announcement', async (req, res) => {
     if (error) return res.status(400).json({ success: false, message: error.message });
     res.json({ success: true, message: "Duyuru başarıyla güncellendi!" });
 });
+// 16. Normal Öğrenci Girişi (QR olmadan)
+app.post('/api/student-login', async (req, res) => {
+    const { ogrenci_no, sifre } = req.body;
+    if (!ogrenci_no || !sifre) return res.status(400).json({ success: false, message: "Numara ve şifre gerekli." });
+    
+    const { data: ogrenci, error } = await supabase
+        .from('ogrenciler')
+        .select('*')
+        .eq('ogrenci_no', ogrenci_no)
+        .eq('sifre', sifre)
+        .single();
+
+    if (error || !ogrenci) return res.status(400).json({ success: false, message: "Hatalı öğrenci numarası veya şifre!" });
+    res.json({ success: true, ogrenci_no: ogrenci.ogrenci_no });
+});
+
+// 17. Öğrenci Etkinlik Geri Bildirimi / Yorumu
+app.post('/api/submit-feedback', async (req, res) => {
+    const { ogrenci_no, etkinlik_id, yorum } = req.body;
+    const { error } = await supabase
+        .from('yoklamalar')
+        .update({ yorum })
+        .eq('ogrenci_no', ogrenci_no)
+        .eq('etkinlik_id', etkinlik_id);
+        
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    res.json({ success: true, message: "Geri bildiriminiz kaydedildi, teşekkürler!" });
+});
 
 module.exports = app;
