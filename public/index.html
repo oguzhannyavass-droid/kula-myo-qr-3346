@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>MCBÜ Kula MYO — Etkinlik ve Toplantı Sistemi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <canvas id="gl"></canvas>
+    <nav class="nav">
+        <a href="#top" class="brand"><img src="logo.png" alt="">Kula MYO</a>
+        <div class="links">
+            <a href="#admin" id="navAdmin" hidden>Yönetim Paneli</a>
+            <span id="who" class="who"></span>
+            <button class="btn sm" id="loginBtn">Yönetici Girişi</button>
+            <button class="btn sm ghost" id="logoutBtn" hidden>Çıkış</button>
+        </div>
+    </nav>
+
+    <header class="hero" id="top">
+        <div class="hero-t">
+            <p class="tag">Manisa Celal Bayar Üniversitesi</p>
+            <h1>Kula Meslek<br><em>Yüksekokulu</em></h1>
+            <p class="lead">Güncel duyuruları takip edin, etkinlik ve toplantılara QR kodla katılın.</p>
+            <!-- Etkinlikleri gör butonu BURADAN KALDIRILDI -->
+        </div>
+        <div class="scroll">Kaydır</div>
+    </header>
+
+    <!-- DUYURULAR PANOSU (Hemen Kula MYO yazısının altına yerleştirildi) -->
+    <section class="sec" id="duyurular">
+        <div class="wrap">
+            <p class="tag">Güncel Panolar</p>
+            <h2>Duyurular ve <em>Bilgilendirmeler</em></h2>
+            <div id="mainAnnouncementsBox">
+                <!-- JS ile buraya duyurular otomatik yüklenecek -->
+            </div>
+        </div>
+    </section>
+
+    <!-- YÖNETİM KONTROL PANELİ -->
+    <section class="sec alt" id="admin" hidden>
+        <div class="wrap">
+            <p class="tag">Yönetici</p>
+            <h2>Yönetim <em>Kontrol Paneli</em></h2>
+            <div id="adminPanelWrapper"></div>
+        </div>
+    </section>
+
+    <footer class="foot">
+        <img src="logo.png" alt="">
+        <p>Manisa Celal Bayar Üniversitesi Kula Meslek Yüksekokulu</p>
+    </footer>
+
+    <dialog id="auth">
+        <form id="aForm">
+            <h3 id="aTitle">Yönetici Girişi</h3>
+            <p id="aMsg" class="msg" role="alert"></p>
+            <input id="aNo" placeholder="Kullanıcı Adı (admin)" required autocomplete="username">
+            <input id="aPw" type="password" placeholder="Şifre (123456)" required autocomplete="current-password">
+            <button class="btn" id="aSend">Giriş yap</button>
+            <button type="button" class="link" id="aX">Kapat</button>
+        </form>
+    </dialog>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
