@@ -71,78 +71,100 @@ document.addEventListener("DOMContentLoaded", () => {
             if (result.success) tabLoginBtn.click();
         });
 
+        // 🟢 ÖĞRENCİ YOKLAMAYA KATILMA & KONUM KONTROLÜ
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const ogrenciNo = document.getElementById('logNo').value;
             const sifre = document.getElementById('logPw').value;
 
-            const res = await fetch('/api/login-and-attend', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ogrenci_no: ogrenciNo, sifre, eventId, submittedToken: token })
-            });
-            const result = await res.json();
-            if (result.success) {
-                document.body.innerHTML = `
-                    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0d2b52; color: #fff; text-align: center; padding: 1rem;">
-                        <div style="background: #113663; padding: 2.5rem; border-radius: 1rem; max-width: 400px; width: 100%;">
-                            <h2 style="color: #a6e6db; margin-bottom: 1rem;">Yoklama Başarılı!</h2>
-                            <p style="margin-bottom: 1.5rem;">${result.message}</p>
-                            <button id="viewProfileBtn" style="padding: 0.75rem 1.5rem; background: #a6e6db; color: #0d2b52; border: none; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">Profilimi & Katıldığım Etkinlikleri Gör</button>
-                        </div>
-                    </div>
-                `;
+            if (!navigator.geolocation) {
+                return alert("Tarayıcınız konum özelliğini desteklemiyor.");
+            }
 
-                document.getElementById('viewProfileBtn').addEventListener('click', async () => {
-                    const profRes = await fetch(`/api/student-profile?ogrenci_no=${ogrenciNo}`);
-                    const profResult = await profRes.json();
-                    if (profResult.success) {
-                        let historyRows = profResult.history.map(h => `<tr><td style="padding:0.4rem;">${h.etkinlik_id}</td><td style="padding:0.4rem;">${new Date(h.katilim_tarihi).toLocaleString('tr-TR')}</td></tr>`).join('');
-                        
-                        document.body.innerHTML = `
-                            <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0d2b52; color: #fff; padding: 1rem;">
-                                <div style="background: #113663; padding: 2rem; border-radius: 1rem; max-width: 500px; width: 100%;">
-                                    <h3 style="color: #a6e6db; margin-top:0;">Öğrenci Profili</h3>
-                                    <form id="updateProfileForm" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
-                                        <label style="font-size:0.85rem; color:#a6e6db;">Ad Soyad:</label>
-                                        <input type="text" id="updName" value="${profResult.student.ogrenci_ad_soyad}" required style="padding:0.5rem; background:rgba(0,0,0,0.2); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem;">
-                                        <label style="font-size:0.85rem; color:#a6e6db;">Bölüm:</label>
-                                        <input type="text" id="updBolum" value="${profResult.student.bolum}" required style="padding:0.5rem; background:rgba(0,0,0,0.2); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem;">
-                                        <label style="font-size:0.85rem; color:#a6e6db;">Yeni Şifre:</label>
-                                        <input type="password" id="updPw" value="${profResult.student.sifre}" required style="padding:0.5rem; background:rgba(0,0,0,0.2); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem;">
-                                        <button type="submit" style="padding:0.5rem; background:#a6e6db; color:#0d2b52; border:none; border-radius:0.4rem; font-weight:bold; cursor:pointer;">Bilgilerimi Güncelle</button>
-                                    </form>
-                                    <h4 style="color: #a6e6db; margin-bottom:0.5rem;">Katıldığım Etkinlikler (${profResult.history.length})</h4>
-                                    <div style="max-height: 150px; overflow-y: auto;">
-                                        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
-                                            <tr style="border-bottom:1px solid rgba(255,255,255,0.2); color:#a6e6db;"><th style="text-align:left; padding:0.4rem;">Etkinlik</th><th style="text-align:left; padding:0.4rem;">Tarih</th></tr>
-                                            ${historyRows || '<tr><td colspan="2" style="padding:0.5rem; text-align:center;">Henüz katılım yok.</td></tr>'}
-                                        </table>
+            // Konum izni iste
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const ogr_enlem = position.coords.latitude;
+                const ogr_boylam = position.coords.longitude;
+
+                const res = await fetch('/api/login-and-attend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        ogrenci_no: ogrenciNo, 
+                        sifre, 
+                        eventId, 
+                        submittedToken: token,
+                        ogr_enlem: ogr_enlem,
+                        ogr_boylam: ogr_boylam
+                    })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    document.body.innerHTML = `
+                        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0d2b52; color: #fff; text-align: center; padding: 1rem;">
+                            <div style="background: #113663; padding: 2.5rem; border-radius: 1rem; max-width: 400px; width: 100%;">
+                                <h2 style="color: #a6e6db; margin-bottom: 1rem;">Yoklama Başarılı!</h2>
+                                <p style="margin-bottom: 1.5rem;">${result.message}</p>
+                                <button id="viewProfileBtn" style="padding: 0.75rem 1.5rem; background: #a6e6db; color: #0d2b52; border: none; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">Profilimi & Katıldığım Etkinlikleri Gör</button>
+                            </div>
+                        </div>
+                    `;
+
+                    document.getElementById('viewProfileBtn').addEventListener('click', async () => {
+                        const profRes = await fetch(`/api/student-profile?ogrenci_no=${ogrenciNo}`);
+                        const profResult = await profRes.json();
+                        if (profResult.success) {
+                            let historyRows = profResult.history.map(h => `<tr><td style="padding:0.4rem;">${h.etkinlik_id}</td><td style="padding:0.4rem;">${new Date(h.katilim_tarihi).toLocaleString('tr-TR')}</td></tr>`).join('');
+                            
+                            document.body.innerHTML = `
+                                <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0d2b52; color: #fff; padding: 1rem;">
+                                    <div style="background: #113663; padding: 2rem; border-radius: 1rem; max-width: 500px; width: 100%;">
+                                        <h3 style="color: #a6e6db; margin-top:0;">Öğrenci Profili</h3>
+                                        <form id="updateProfileForm" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+                                            <label style="font-size:0.85rem; color:#a6e6db;">Ad Soyad:</label>
+                                            <input type="text" id="updName" value="${profResult.student.ogrenci_ad_soyad}" required style="padding:0.5rem; background:rgba(0,0,0,0.2); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem;">
+                                            <label style="font-size:0.85rem; color:#a6e6db;">Bölüm:</label>
+                                            <input type="text" id="updBolum" value="${profResult.student.bolum}" required style="padding:0.5rem; background:rgba(0,0,0,0.2); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem;">
+                                            <label style="font-size:0.85rem; color:#a6e6db;">Yeni Şifre:</label>
+                                            <input type="password" id="updPw" value="${profResult.student.sifre}" required style="padding:0.5rem; background:rgba(0,0,0,0.2); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem;">
+                                            <button type="submit" style="padding:0.5rem; background:#a6e6db; color:#0d2b52; border:none; border-radius:0.4rem; font-weight:bold; cursor:pointer;">Bilgilerimi Güncelle</button>
+                                        </form>
+                                        <h4 style="color: #a6e6db; margin-bottom:0.5rem;">Katıldığım Etkinlikler (${profResult.history.length})</h4>
+                                        <div style="max-height: 150px; overflow-y: auto;">
+                                            <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                                                <tr style="border-bottom:1px solid rgba(255,255,255,0.2); color:#a6e6db;"><th style="text-align:left; padding:0.4rem;">Etkinlik</th><th style="text-align:left; padding:0.4rem;">Tarih</th></tr>
+                                                ${historyRows || '<tr><td colspan="2" style="padding:0.5rem; text-align:center;">Henüz katılım yok.</td></tr>'}
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
 
-                        document.getElementById('updateProfileForm').addEventListener('submit', async (e) => {
-                            e.preventDefault();
-                            const uRes = await fetch('/api/update-profile', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    ogrenci_no: ogrenciNo,
-                                    ogrenci_ad_soyad: document.getElementById('updName').value,
-                                    bolum: document.getElementById('updBolum').value,
-                                    sifre: document.getElementById('updPw').value
-                                })
+                            document.getElementById('updateProfileForm').addEventListener('submit', async (e) => {
+                                e.preventDefault();
+                                const uRes = await fetch('/api/update-profile', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        ogrenci_no: ogrenciNo,
+                                        ogrenci_ad_soyad: document.getElementById('updName').value,
+                                        bolum: document.getElementById('updBolum').value,
+                                        sifre: document.getElementById('updPw').value
+                                    })
+                                });
+                                const uResJson = await uRes.json();
+                                alert(uResJson.message);
                             });
-                            const uResJson = await uRes.json();
-                            alert(uResJson.message);
-                        });
-                    }
-                });
-            } else {
-                alert("Hata: " + result.message);
-            }
+                        }
+                    });
+                } else {
+                    alert("Hata: " + result.message);
+                }
+            }, (error) => {
+                alert("Yoklamaya katılmak için lütfen tarayıcınızdan KONUM İZNİ verin.");
+            }, { enableHighAccuracy: true });
         });
     } 
     // ==========================================
@@ -319,37 +341,51 @@ document.addEventListener("DOMContentLoaded", () => {
                     btnManage.style.background = 'transparent'; btnManage.style.color = '#fff';
                 });
 
-                // Yeni Etkinlik Oluşturma ve QR Üretme (SAYFA YENİLENME SORUNU ÇÖZÜLDÜ)
+                // 🟢 YÖNETİCİ YENİ ETKİNLİK OLUŞTURMA & KONUM KAYDI
                 document.getElementById('newEventForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const title = document.getElementById('evTitle').value;
                     const yer = document.getElementById('evYer').value;
                     const tarihStr = document.getElementById('evTarih').value;
 
-                    const res = await fetch('/api/create-event', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ etkinlik_adi: title, yer, kontenjan: 100, tarih: new Date(tarihStr) })
-                    });
-                    const r = await res.json();
-                    alert(r.message);
-                    
-                    if (r.success) {
-                        eventId = r.etkinlik_id;
-                        refreshQRCode('liveAdminQr', eventId);
-                        
-                        // Eski sayacı temizle
-                        if (window.qrInterval) clearInterval(window.qrInterval);
-                        window.qrInterval = setInterval(() => refreshQRCode('liveAdminQr', eventId), 10000); 
-                        
-                        // Listelere yeni etkinliği sayfayı yenilemeden ekle
-                        const yeniSecenek = `<option value="${eventId}">${title} (${yer})</option>`;
-                        document.getElementById('adminEventSelect').insertAdjacentHTML('afterbegin', yeniSecenek);
-                        document.getElementById('manualEventSelect').insertAdjacentHTML('afterbegin', yeniSecenek);
-                        
-                        // Sadece formu temizle, QR kod ekranda kalsın
-                        document.getElementById('newEventForm').reset();
+                    if (!navigator.geolocation) {
+                        return alert("Tarayıcınız konum özelliğini desteklemiyor.");
                     }
+                    
+                    // Etkinlik için yöneticinin mevcut konumunu al
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        const enlem = position.coords.latitude;
+                        const boylam = position.coords.longitude;
+
+                        const res = await fetch('/api/create-event', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                etkinlik_adi: title, 
+                                yer, 
+                                kontenjan: 100, 
+                                tarih: new Date(tarihStr), 
+                                enlem: enlem, 
+                                boylam: boylam 
+                            })
+                        });
+                        
+                        const r = await res.json();
+                        alert(r.message);
+                        
+                        if (r.success) {
+                            eventId = r.etkinlik_id;
+                            refreshQRCode('liveAdminQr', eventId);
+                            if (window.qrInterval) clearInterval(window.qrInterval);
+                            window.qrInterval = setInterval(() => refreshQRCode('liveAdminQr', eventId), 10000); 
+                            const yeniSecenek = `<option value="${eventId}">${title} (${yer})</option>`;
+                            document.getElementById('adminEventSelect').insertAdjacentHTML('afterbegin', yeniSecenek);
+                            document.getElementById('manualEventSelect').insertAdjacentHTML('afterbegin', yeniSecenek);
+                            document.getElementById('newEventForm').reset();
+                        }
+                    }, (error) => {
+                        alert("Etkinlik oluşturmak için konum izni vermelisiniz!");
+                    }, { enableHighAccuracy: true });
                 });
 
                 // Etkinlik Silme
