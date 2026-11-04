@@ -208,37 +208,4 @@ app.post('/api/update-announcement', async (req, res) => {
     res.json({ success: true, message: "Duyuru başarıyla güncellendi!" });
 });
 
-// 16. Etkinlik Kararı Ekleme
-app.post('/api/add-decision', async (req, res) => {
-    const { etkinlik_id, karar_metni } = req.body;
-    
-    if (!etkinlik_id || !karar_metni) {
-        return res.status(400).json({ success: false, message: "Eksik bilgi!" });
-    }
-
-    const { error } = await supabase
-        .from('kararlar')
-        .insert([{ etkinlik_id, karar_metni }]);
-
-    if (error) {
-        return res.status(500).json({ success: false, message: error.message });
-    }
-
-    res.json({ success: true, message: "Karar başarıyla kaydedildi!" });
-});
-
-// 17. Kararları Getirme (Etkinliğe göre veya Tümü)
-app.get('/api/get-decisions', async (req, res) => {
-    const eventId = req.query.eventId;
-    let query = supabase.from('kararlar').select('*, etkinlikler(etkinlik_adi)').order('created_at', { ascending: false });
-    
-    if (eventId) {
-        query = query.eq('etkinlik_id', eventId);
-    }
-
-    const { data, error } = await query;
-    if (error) return res.status(500).json({ success: false, message: error.message });
-    res.json({ success: true, data });
-});
-
 module.exports = app;
