@@ -16,6 +16,7 @@
         <div class="links">
             <a href="#admin" id="navAdmin" hidden>Yönetim Paneli</a>
             <span id="who" class="who"></span>
+            <button class="btn sm" id="stdLoginBtn" style="margin-right: 10px; background: transparent; border: 1px solid #a6e6db; color: #a6e6db;">Öğrenci Paneli</button>
             <button class="btn sm" id="loginBtn">Yönetici Girişi</button>
             <button class="btn sm ghost" id="logoutBtn" hidden>Çıkış</button>
         </div>
@@ -70,5 +71,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="app.js"></script>
+    <dialog id="stdAuth">
+    <form id="stdForm">
+        <h3>Öğrenci Girişi</h3>
+        <input id="sNo" placeholder="Öğrenci Numarası" required autocomplete="username">
+        <input id="sPw" type="password" placeholder="Şifre" required autocomplete="current-password">
+        <button class="btn" id="sSend">Giriş Yap</button>
+        <button type="button" class="link" id="sX">Kapat</button>
+    </form>
+</dialog>
 </body>
 </html>
