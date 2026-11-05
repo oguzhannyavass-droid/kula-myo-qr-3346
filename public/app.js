@@ -594,6 +594,44 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(r.message);
             if (r.success) loadAdminDashboard();
         };
+        // --- YÖNETİCİ GERİ BİLDİRİMLERİ EKRANI ---
+        const navFeedbackBtn = document.getElementById('navFeedbackBtn');
+        const feedbackModal = document.getElementById('feedbackModal');
+        const closeFeedbackModal = document.getElementById('closeFeedbackModal');
+        const feedbackListContainer = document.getElementById('feedbackListContainer');
+
+        if (navFeedbackBtn && feedbackModal) {
+            navFeedbackBtn.addEventListener('click', async () => {
+                feedbackModal.showModal();
+                feedbackListContainer.innerHTML = `<p style="text-align: center; color: rgba(255,255,255,0.7);">Yükleniyor...</p>`;
+
+                try {
+                    const res = await fetch('/api/get-feedbacks');
+                    const result = await res.json();
+
+                    if (result.success && result.data.length > 0) {
+                        feedbackListContainer.innerHTML = result.data.map(item => `
+                            <div style="background: rgba(0,0,0,0.25); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem; color: #a6e6db;">
+                                    <span><strong>${item.ogrenci_ad_soyad}</strong> (${item.ogrenci_no})</span>
+                                    <span>Etkinlik: ${item.etkinlik_id}</span>
+                                </div>
+                                <p style="margin: 0; font-size: 0.95rem; color: #fff; line-height: 1.4;">"${item.yorum}"</p>
+                            </div>
+                        `).join('');
+                    } else {
+                        feedbackListContainer.innerHTML = `<p style="text-align: center; color: rgba(255,255,255,0.7);">Henüz yapılmış bir geri bildirim bulunmuyor.</p>`;
+                    }
+                } catch (err) {
+                    console.error("Geri bildirimler yüklenemedi:", err);
+                    feedbackListContainer.innerHTML = `<p style="text-align: center; color: #ff4d4d;">Geri bildirimler yüklenirken hata oluştu.</p>`;
+                }
+            });
+        }
+
+        if (closeFeedbackModal && feedbackModal) {
+            closeFeedbackModal.addEventListener('click', () => feedbackModal.close());
+        }
 
         // --- YÖNETİCİ GİRİŞ VE ÇIKIŞ KONTROLLERİ ---
         const loginBtn = document.getElementById('loginBtn');
