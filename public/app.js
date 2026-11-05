@@ -655,6 +655,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (no === 'admin' && pw === '123456') { 
                     authDialog.close(); 
                     navAdmin.hidden = false; 
+                    navFeedbackBtn.hidden = false; 
+                    if (stdLoginBtn) stdLoginBtn.hidden = true;
                     adminSection.hidden = false; 
                     loginBtn.hidden = true; 
                     logoutBtn.hidden = false; 
