@@ -442,49 +442,71 @@ document.addEventListener("DOMContentLoaded", () => {
                     window.qrInterval = setInterval(() => refreshQRCode('selectedEventQrContainer', selectedEvId), 10000);
                 });
 
-                // Katılanları Gör ve CSV İndir
-                document.getElementById('loadAttListBtn').addEventListener('click', async () => {
+                // Katılanları Gör ve Canlı Olarak Otomatik Güncelle
+                document.getElementById('loadAttListBtn').addEventListener('click', () => {
                     const selectedEvId = document.getElementById('adminEventSelect').value;
                     const container = document.getElementById('adminAttendanceContainer');
-                    const res = await fetch(`/api/get-attendance?eventId=${selectedEvId}`);
-                    const result = await res.json();
+                    if (!selectedEvId) return alert("Lütfen bir etkinlik seçin.");
 
-                    if (result.success) {
-                        let rows = result.data.map(item => `
-                            <tr>
-                                <td style="padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">${item.ogrenci_no}</td>
-                                <td style="padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">${item.ogrenci_ad_soyad}</td>
-                                <td style="padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">${item.bolum}</td>
-                                <td style="padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">${new Date(item.katilim_tarihi).toLocaleTimeString('tr-TR')}</td>
-                            </tr>
-                        `).join('');
+                    // Canlı katılım listesini çeken ve tabloyu güncelleyen fonksiyon
+                    async function fetchAndUpdateAttendance() {
+                        try {
+                            const res = await fetch(`/api/get-attendance?eventId=${selectedEvId}`);
+                            const result = await res.json();
 
-                        container.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0 0.5rem 0;">
-                                <span style="font-size:0.9rem; color:#a6e6db;">Katılanlar (${result.data.length} Öğrenci)</span>
-                                <button id="adminCsvBtn" style="padding: 0.3rem 0.7rem; background: #a6e6db; color: #0d2b52; border: none; border-radius: 0.3rem; font-weight: bold; cursor: pointer;">CSV İndir</button>
-                            </div>
-                            <div style="max-height: 180px; overflow-y: auto;">
-                                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
-                                    <thead><tr style="color:#a6e6db; border-bottom:1px solid rgba(255,255,255,0.2);"><th style="padding:0.4rem;">No</th><th style="padding:0.4rem;">Ad Soyad</th><th style="padding:0.4rem;">Bölüm</th><th style="padding:0.4rem;">Saat</th></tr></thead>
-                                    <tbody>${rows || '<tr><td colspan="4" style="padding:0.5rem; text-align:center;">Kayıt yok.</td></tr>'}</tbody>
-                                </table>
-                            </div>
-                        `;
+                            if (result.success) {
+                                let rows = result.data.map(item => `
+                                    <tr>
+                                        <td style="padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">${item.ogrenci_no}</td>
+                                        <td style="padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">${item.ogrenci_ad_soyad}</td>
+                                        <td style="padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">${item.bolum}</td>
+                                        <td style="padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">${new Date(item.katilim_tarihi).toLocaleTimeString('tr-TR')}</td>
+                                    </tr>
+                                `).join('');
 
-                        document.getElementById('adminCsvBtn').addEventListener('click', () => {
-                            let csvContent = "\uFEFFÖğrenci No,Ad Soyad,Bölüm,Katılım Tarihi\n";
-                            result.data.forEach(item => {
-                                csvContent += `"${item.ogrenci_no}","${item.ogrenci_ad_soyad}","${item.bolum}","${item.katilim_tarihi}"\n`;
-                            });
-                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `${selectedEvId}_yoklama.csv`;
-                            a.click();
-                        });
+                                container.innerHTML = `
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0 0.5rem 0;">
+                                        <span style="font-size:0.9rem; color:#a6e6db;">Katılanlar (${result.data.length} Öğrenci) - <strong style="color:#4caf50;">Canlı Güncelleniyor 🟢</strong></span>
+                                        <button id="adminCsvBtn" style="padding: 0.3rem 0.7rem; background: #a6e6db; color: #0d2b52; border: none; border-radius: 0.3rem; font-weight: bold; cursor: pointer;">CSV İndir</button>
+                                    </div>
+                                    <div style="max-height: 180px; overflow-y: auto;">
+                                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                                            <thead><tr style="color:#a6e6db; border-bottom:1px solid rgba(255,255,255,0.2);"><th style="padding:0.4rem;">No</th><th style="padding:0.4rem;">Ad Soyad</th><th style="padding:0.4rem;">Bölüm</th><th style="padding:0.4rem;">Saat</th></tr></thead>
+                                            <tbody>${rows || '<tr><td colspan="4" style="padding:0.5rem; text-align:center;">Henüz katılan yok.</td></tr>'}</tbody>
+                                        </table>
+                                    </div>
+                                `;
+
+                                // CSV İndirme Butonu Olayı
+                                const csvBtn = document.getElementById('adminCsvBtn');
+                                if (csvBtn) {
+                                    csvBtn.onclick = () => {
+                                        let csvContent = "\uFEFFÖğrenci No,Ad Soyad,Bölüm,Katılım Tarihi\n";
+                                        result.data.forEach(item => {
+                                            csvContent += `"${item.ogrenci_no}","${item.ogrenci_ad_soyad}","${item.bolum}","${item.katilim_tarihi}"\n`;
+                                        });
+                                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `${selectedEvId}_yoklama.csv`;
+                                        a.click();
+                                    };
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Canlı liste güncellenemedi:", err);
+                        }
                     }
+
+                    // Butona basıldığı an hemen listeyi getir
+                    fetchAndUpdateAttendance();
+
+                    // Daha önceden çalışan bir canlı takip sayacı varsa temizle
+                    if (window.attendanceInterval) clearInterval(window.attendanceInterval);
+
+                    // Her 4 saniyede bir listeyi otomatik yenile
+                    window.attendanceInterval = setInterval(fetchAndUpdateAttendance, 4000);
                 });
 
                 // Manuel Öğrenci Ekle ("Listeye Ekle")
