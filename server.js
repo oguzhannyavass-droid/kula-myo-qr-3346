@@ -50,6 +50,16 @@ app.post('/api/register', async (req, res) => {
         return res.status(400).json({ success: false, message: "Lütfen tüm alanları doldurun." });
     }
 
+    // --- BACKEND REGEX KURALLARI ---
+    const sayiRegex = /^\d+$/;
+    const harfBoslukRegex = /^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]+$/;
+    const sifreRegex = /^(?=.*[a-zA-ZğüşıöçĞÜŞİÖÇ])(?=.*\d).{6,}$/;
+
+    if (!sayiRegex.test(ogrenci_no)) return res.status(400).json({ success: false, message: "Öğrenci numarası sadece sayı olmalıdır." });
+    if (!harfBoslukRegex.test(ogrenci_ad_soyad)) return res.status(400).json({ success: false, message: "Ad Soyad sadece harf içermelidir." });
+    if (!harfBoslukRegex.test(bolum)) return res.status(400).json({ success: false, message: "Bölüm sadece harf içermelidir." });
+    if (!sifreRegex.test(sifre)) return res.status(400).json({ success: false, message: "Şifre en az 6 haneli olup harf ve sayı içermelidir." });
+
     const { error } = await supabase
         .from('ogrenciler')
         .insert([{ ogrenci_no, ogrenci_ad_soyad, bolum, sifre }]);
