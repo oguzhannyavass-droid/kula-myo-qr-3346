@@ -271,17 +271,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         <!-- SEKME 1: ETKİNLİKLER & DUYURULAR -->
                         <div id="sectionManage" style="display: flex; flex-direction: column; gap: 1.5rem;">
-                            <!-- Etkinlik Listesi ve CSV -->
+                           <!-- Etkinlik Listesi ve CSV -->
                             <div>
                                 <h4 style="color: #a6e6db; margin-bottom: 0.5rem;">Mevcut Etkinlikler & Katılım Listeleri</h4>
                                 <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
                                     <select id="adminEventSelect" style="flex:1; padding:0.5rem; background:rgba(0,0,0,0.3); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:0.4rem; min-width: 200px;">
                                         ${eventOptions}
                                     </select>
-                                    <button id="loadAttListBtn" style="padding:0.5rem 1rem; background:#a6e6db; color:#0d2b52; border:none; border-radius:0.4rem; font-weight:bold; cursor:pointer;">Katılanları Gör / CSV İndir</button>
+                                    <button id="showSelectedQrBtn" style="padding:0.5rem 1rem; background:#4caf50; color:#fff; border:none; border-radius:0.4rem; font-weight:bold; cursor:pointer;">QR'ı Aç</button>
+                                    <button id="loadAttListBtn" style="padding:0.5rem 1rem; background:#a6e6db; color:#0d2b52; border:none; border-radius:0.4rem; font-weight:bold; cursor:pointer;">Katılanları Gör</button>
                                     <button onclick="editEvent()" style="padding:0.5rem 1rem; background:#ffb74d; color:#0d2b52; border:none; border-radius:0.4rem; font-weight:bold; cursor:pointer;">Düzenle</button>
                                     <button id="deleteEventBtn" style="padding:0.5rem 1rem; background:#ff4d4d; color:#fff; border:none; border-radius:0.4rem; font-weight:bold; cursor:pointer;">Sil</button>
                                 </div>
+                                <!-- Seçilen Etkinliğin QR Kodunun Görüneceği Alan -->
+                                <div id="selectedEventQrContainer" style="display: flex; justify-content: center; padding: 1rem; margin-bottom: 1rem; background: #fff; border-radius: 0.5rem; max-width: 250px; margin-left: auto; margin-right: auto; display: none;"></div>
                                 <div id="adminAttendanceContainer"></div>
                             </div>
 
@@ -421,6 +424,22 @@ document.addEventListener("DOMContentLoaded", () => {
                         alert(r.message);
                         if (r.success) loadAdminDashboard();
                     }
+                });
+                // Seçilen Etkinliğin QR Kodunu Ekrana Getirme ve Güncelleme
+                document.getElementById('showSelectedQrBtn').addEventListener('click', () => {
+                    const selectedEvId = document.getElementById('adminEventSelect').value;
+                    const qrBox = document.getElementById('selectedEventQrContainer');
+                    
+                    if (!selectedEvId) {
+                        return alert("Lütfen bir etkinlik seçin.");
+                    }
+
+                    qrBox.style.display = 'flex';
+                    refreshQRCode('selectedEventQrContainer', selectedEvId);
+
+                    // Eski sayacı temizle ve her 10 saniyede bir QR'ı yenile
+                    if (window.qrInterval) clearInterval(window.qrInterval);
+                    window.qrInterval = setInterval(() => refreshQRCode('selectedEventQrContainer', selectedEvId), 10000);
                 });
 
                 // Katılanları Gör ve CSV İndir
