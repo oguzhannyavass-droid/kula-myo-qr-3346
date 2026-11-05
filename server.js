@@ -129,6 +129,24 @@ app.post('/api/login-and-attend', async (req, res) => {
 
     res.json({ success: true, message: `Harika ${ogrenci.ogrenci_ad_soyad}, yoklamanız alındı!` });
 });
+// Yönetici İçin Tüm Geri Bildirimleri Listeleme API'si
+app.get('/api/get-feedbacks', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('yoklamalar')
+            .select('ogrenci_no, ogrenci_ad_soyad, bolum, etkinlik_id, katilim_tarihi, yorum')
+            .not('yorum', 'is', null)
+            .neq('yorum', '');
+
+        if (error) {
+            return res.status(500).json({ success: false, message: error.message });
+        }
+
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // 4. Etkinlik Oluşturma (Yönetici - Konum Kayıtlı)
 app.post('/api/create-event', async (req, res) => {
